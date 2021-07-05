@@ -35,8 +35,10 @@ const httpTrigger: AzureFunction = async function (
     "stream.offline",
     "user.update",
   ];
-  ids.forEach(async (id) => {
-    subtypes.forEach(async (subtype) => {
+  for (let index = 0; index < ids.length; index++) {
+    const id = ids[index];
+    for (let stindex = 0; stindex < ids.length; stindex++) {
+      const subtype = subtypes[stindex];
       try {
         const subResponse = await TwitchHelper.createSubscription(
           authToken,
@@ -57,8 +59,8 @@ const httpTrigger: AzureFunction = async function (
           `💣 createSubscription failed! Type: ${subtype}, User: ${id}`
         );
       }
-    });
-  });
+    }
+  }
 };
 
 export default httpTrigger;
