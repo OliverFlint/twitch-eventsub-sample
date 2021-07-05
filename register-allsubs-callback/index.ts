@@ -26,7 +26,7 @@ const httpTrigger: AzureFunction = async function (
         context.res = {
           status: 403,
         };
-        console.log("Signature check failed!");
+        context.log("💣 Signature check failed!");
         return;
       }
       const challenge = req.body.challenge;
@@ -35,26 +35,51 @@ const httpTrigger: AzureFunction = async function (
         status: 200,
         body: challenge,
       } as ResponseInit;
-      console.log("Signature check passed");
+      context.log("✔️ Signature check passed");
       return;
     }
   } else if (substatus === "enabled") {
     // subscription enabled
-    console.log(
+    context.log(
       `Event: ${req.body.subscription.type}, User: ${req.body.subscription.condition.broadcaster_user_id}`
     );
     const authToken = await TwitchHelper.autheticate();
-    const twitchdata = await TwitchHelper.getUser(
-      req.body.subscription.condition.broadcaster_user_id,
-      authToken
-    );
-    GitHubHelper.setFileContent(
-      JSON.stringify(twitchdata),
-      `Updating: ${req.body.subscription.condition.broadcaster_user_id}, Event: ${req.body.subscription.type}`,
-      `${req.body.subscription.condition.broadcaster_user_id}.json`
-    );
+
+    // update twitch data
+    try {
+      const twitchdata = await TwitchHelper.getUser(
+        req.body.subscription.condition.broadcaster_user_id,
+        authToken
+      );
+      await GitHubHelper.setFileContent(
+        JSON.stringify(twitchdata.data[0]),
+        `Updating: ${req.body.subscription.condition.broadcaster_user_id}, Event: ${req.body.subscription.type}`,
+        `${req.body.subscription.condition.broadcaster_user_id}.json`,
+        "user",
+        context
+      );
+    } catch (error) {
+      context.log(`💣 User data update failed!. ${JSON.stringify(error)}`);
+    }
+
+    // update vod data
+    try {
+      const voddata = await TwitchHelper.getVod(
+        req.body.subscription.condition.broadcaster_user_id,
+        authToken
+      );
+      await GitHubHelper.setFileContent(
+        JSON.stringify(voddata.data[0]),
+        `Updating: ${req.body.subscription.condition.broadcaster_user_id}, Event: ${req.body.subscription.type}`,
+        `${req.body.subscription.condition.broadcaster_user_id}.json`,
+        "vod",
+        context
+      );
+    } catch (error) {
+      context.log(`💣 Vod data update failed!. ${JSON.stringify(error)}`);
+    }
   } else {
-    console.log(substatus);
+    context.log(substatus);
   }
 
   // default response

@@ -12,5 +12,6 @@ export const getCurrentIds = async (): Promise<string[]> => {
   const ids = data.map((value) => {
     return value.twitchData.id as string;
   });
+  ids.push("215367150"); //add itsmeolli3 for testing
   return ids;
 };

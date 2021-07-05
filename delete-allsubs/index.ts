@@ -1,8 +1,6 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions";
 import * as TwitchHelper from "../helpers/twitch";
 import * as DataHelper from "../helpers/data";
-import * as GitHubHelper from "../helpers/github";
-import fetch, { RequestInit, BodyInit, Response } from "node-fetch";
 
 const httpTrigger: AzureFunction = async function (
   context: Context,
@@ -27,38 +25,6 @@ const httpTrigger: AzureFunction = async function (
       context.log(`💣 deleteSubscription failed! Id: ${sub.id}`);
     }
   }
-
-  // Register subscriptions
-  const subtypes = [
-    "channel.update",
-    "stream.online",
-    "stream.offline",
-    "user.update",
-  ];
-  ids.forEach(async (id) => {
-    subtypes.forEach(async (subtype) => {
-      try {
-        const subResponse = await TwitchHelper.createSubscription(
-          authToken,
-          subtype,
-          id,
-          `${context.req.url}callback`,
-          context
-        );
-        if (subResponse.ok) {
-          context.log(`✔️ ${subtype} Subscription registered for ${id}.`);
-        } else {
-          context.log(
-            `❌ ${subtype} Subscription failed for ${id}. ${subResponse.status}, ${subResponse.statusText}`
-          );
-        }
-      } catch (error) {
-        context.log(
-          `💣 createSubscription failed! Type: ${subtype}, User: ${id}`
-        );
-      }
-    });
-  });
 };
 
 export default httpTrigger;

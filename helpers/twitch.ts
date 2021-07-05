@@ -1,3 +1,4 @@
+import { Context } from "@azure/functions";
 import fetch, { RequestInit, Response } from "node-fetch";
 
 export const autheticate = async (): Promise<string> => {
@@ -18,12 +19,29 @@ export const getHeader = (authToken: string) => {
   return subheader;
 };
 
-export const getSubscriptions = async (authToken: string): Promise<any> => {
-  const subsresponse = await fetch(
-    "https://api.twitch.tv/helix/eventsub/subscriptions",
-    { headers: getHeader(authToken) } as RequestInit
-  );
+export const getSubscriptions = async (
+  authToken: string,
+  cursor?: string
+): Promise<any> => {
+  const url = cursor
+    ? `https://api.twitch.tv/helix/eventsub/subscriptions?after=${cursor}`
+    : `https://api.twitch.tv/helix/eventsub/subscriptions`;
+  const subsresponse = await fetch(url, {
+    headers: getHeader(authToken),
+  } as RequestInit);
   return await subsresponse.json();
+};
+
+export const getAllSubscriptions = async (authToken: string): Promise<any> => {
+  let subsresponse = await getSubscriptions(authToken);
+  let data = subsresponse;
+  let pagination = subsresponse.pagination;
+  while (pagination.cursor) {
+    subsresponse = await getSubscriptions(authToken, pagination.cursor);
+    pagination = subsresponse.pagination;
+    data.data = subsresponse.data.concat(data.data);
+  }
+  return data;
 };
 
 export const deleteSubscription = async (
@@ -41,26 +59,30 @@ export const createSubscription = async (
   authToken: string,
   type: string,
   userid: string,
-  callbackurl: string
+  callbackurl: string,
+  context: Context
 ) => {
   const body = {
     type: type,
     version: "1",
-    condition: {
-      broadcaster_user_id: userid,
-    },
+    condition: {} as any,
     transport: {
       method: "webhook",
       callback: callbackurl,
       secret: process.env.TWITCH_SUBSECRET,
     },
   };
+  if (type === "user.update") {
+    body.condition.user_id = userid;
+  } else {
+    body.condition.broadcaster_user_id = userid;
+  }
   const request = {
     headers: getHeader(authToken),
     method: "POST",
     body: JSON.stringify(body),
   } as RequestInit;
-  console.log(request);
+  context.log(request);
   const response = await fetch(
     "https://api.twitch.tv/helix/eventsub/subscriptions",
     request
@@ -75,6 +97,18 @@ export const getUser = async (userid: string, authToken: string) => {
   } as RequestInit;
   const response = await fetch(
     `https://api.twitch.tv/helix/users?id=${userid}`,
+    request
+  );
+  return await response.json();
+};
+
+export const getVod = async (userid: string, authToken: string) => {
+  const request = {
+    headers: getHeader(authToken),
+    method: "GET",
+  } as RequestInit;
+  const response = await fetch(
+    `https://api.twitch.tv/helix/videos?user_id=${userid}&first=1`,
     request
   );
   return await response.json();
