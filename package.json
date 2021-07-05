@@ -1,0 +1,23 @@
+{
+  "name": "twitch-eventsub-sample",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "prestart": "npm run build",
+    "start": "func start --useHttps --cert certificate.pfx --password p@ssw0rd1234",
+    "test": "echo \"No tests yet...\"",
+    "tunnel": "./node_modules/.bin/lt --port 7071 --subdomain 'witeventsub' --local-https true --allow-invalid-cert true"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.1",
+    "octokit": "^1.1.0"
+  },
+  "devDependencies": {
+    "@azure/functions": "^1.2.3",
+    "@types/node-fetch": "^2.5.10",
+    "localtunnel": "^2.0.1",
+    "typescript": "^4.0.0"
+  }
+}
